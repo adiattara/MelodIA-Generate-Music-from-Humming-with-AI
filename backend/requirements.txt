@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+requests
+python-multipart
+torch
+huggingface_hub
+safetensors
+peft
+pyfluidsynth
+Pillow
+databases[asyncpg]

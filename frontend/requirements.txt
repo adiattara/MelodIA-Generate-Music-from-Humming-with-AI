@@ -1,0 +1,13 @@
+streamlit
+requests
+sounddevice
+numpy
+mido
+scipy
+librosa
+pretty_midi
+midiutil
+
+midi2audio
+streamlit-webrtc
+torchaudio
