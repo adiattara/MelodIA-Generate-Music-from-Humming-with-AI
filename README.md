@@ -2,20 +2,24 @@
 
 ## Description
 
-Ce projet contient deux services Dockerized :
+Ce projet contient deux services :
 
 - **Backend** : service FastAPI qui enrichit les fichiers MIDI via un modèle IA et stocke un log dans une base PostgreSQL
 - **Frontend** : application Streamlit qui permet d'enregistrer ou importer des audios, convertir en MIDI, et appeler le backend pour enrichissement
 
-Les deux services partagent un volume de données commun (`./data`). Une base PostgreSQL est déployée pour stocker les logs.
+Les deux services partagent un volume de données commun. Une base PostgreSQL est déployée pour stocker les logs.
 
 ---
 
 ## Prérequis
 
+### Pour Docker Compose
 - Docker et Docker Compose installés sur ta machine
-- Fichier `.env` à la racine du projet (un exemple est fourni)
 
+### Pour Kubernetes
+- kubectl installé
+- Un cluster Kubernetes fonctionnel
+- kustomize installé (inclus dans kubectl récent)
 
 ---
 
@@ -26,30 +30,27 @@ Les deux services partagent un volume de données commun (`./data`). Une base Po
 ├── backend/                # Code backend FastAPI et Dockerfile
 ├── frontend/               # Code frontend Streamlit et Dockerfile
 ├── data/                   # Volume partagé pour fichiers audio et MIDI
-├── .env                    # Variables d'environnement pour la configuration
-├── docker-compose.yml
+├── docker-compose.yml      # Configuration Docker Compose
+├── *.yaml                  # Manifestes Kubernetes
 └── README.md
 ```
 
 ---
 
-## Lancer le projet
+## Lancer le projet avec Docker Compose
 
-1. **Configurer les variables d'environnement** :
-   Assurez-vous que le fichier `.env` existe à la racine du projet et contient les variables nécessaires (voir section Configuration).
-
-2. **Construire et lancer les services** :
+1. **Construire et lancer les services** :
    ```bash
    docker-compose up --build
    ```
 
-3. **Accéder à l'application Streamlit (frontend)** :
+2. **Accéder à l'application Streamlit (frontend)** :
    Ouvre un navigateur sur :
    ```
    http://localhost:8501
    ```
 
-## Nettoyer le projet
+## Nettoyer le projet Docker Compose
 
 Pour arrêter et supprimer les containers et volumes (attention, supprime aussi la base de données) :
 
@@ -57,31 +58,48 @@ Pour arrêter et supprimer les containers et volumes (attention, supprime aussi 
 docker-compose down -v
 ```
 
+## Déployer sur Kubernetes
+
+1. **Construire et pousser les images Docker vers un registre** :
+   ```bash
+   # Construire les images
+   docker build -t "adiattara"/melodia-backend:latest ./backend
+   docker build -t "adiattara"/melodia-frontend:latest ./frontend
+
+   # Pousser les images vers le registre
+   docker push "adiattara"/melodia-backend:latest
+   docker push "adiattara"/melodia-frontend:latest
+   ```
+
+2. **Déployer l'application avec kustomize** :
+   ```bash
+   # Définir le registre d'images
+   export REGISTRY="adiattara"
+
+   # Appliquer les manifestes Kubernetes
+   kubectl apply -k .
+   ```
+
+3. **Accéder à l'application** :
+   ```bash
+   # Obtenir l'adresse IP externe du service frontend
+   kubectl get svc melodia-frontend -n melodia
+   ```
+   Ouvre un navigateur sur l'adresse IP externe sur le port 8501.
+
+## Nettoyer le déploiement Kubernetes
+
+Pour supprimer tous les ressources Kubernetes créées :
+
+```bash
+kubectl delete -k .
+```
+
 ## Notes importantes
 
-- Les variables d'environnement pour la base de données sont définies dans le fichier `.env` à la racine du projet.
 - Le backend utilise la variable d'environnement `DATABASE_URL` pour se connecter à PostgreSQL.
-- Le volume `data/` est partagé pour stocker les fichiers audio et MIDI entre frontend et backend.
-- Le volume Docker nommé `pgdata` stocke les données persistantes de la base PostgreSQL.
-
-## Configuration (.env)
-
-Le fichier `.env` contient les variables d'environnement suivantes :
-```
-# Configuration de la base de données
-POSTGRES_USER=postgres         # Utilisateur PostgreSQL
-POSTGRES_PASSWORD=password     # Mot de passe PostgreSQL
-POSTGRES_DB=melodia_db         # Nom de la base de données
-DATABASE_URL=...               # URL de connexion à la base de données
-
-# Configuration de l'API
-API_URL=http://backend:8000/enrich_midi/  # URL du service API backend
-
-# Configuration du modèle IA
-MODEL_NAME=skytnt/midi-model-tv2o-medium  # Nom du modèle Hugging Face
-MODEL_MAX_LEN=512                         # Longueur maximale de génération
-MODEL_TEMP=0.90                           # Température pour la génération
-MODEL_TOP_P=0.98                          # Paramètre top_p pour la génération
-MODEL_TOP_K=20                            # Paramètre top_k pour la génération
-```
-Vous pouvez modifier ces valeurs selon vos besoins avant de lancer le projet. Les valeurs par défaut sont configurées pour fonctionner avec l'installation standard.
+- Le frontend utilise la variable d'environnement `BACKEND_URL` pour se connecter au backend.
+- Un volume persistant est utilisé pour stocker les fichiers audio et MIDI entre frontend et backend.
+- Un volume persistant est utilisé pour stocker les données de la base PostgreSQL.
+- Les secrets pour les mots de passe de la base de données sont stockés dans un Secret Kubernetes.
+- Toutes les configurations sont stockées dans des ConfigMaps et Secrets pour faciliter la maintenance.

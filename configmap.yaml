@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: melodia-config
+  namespace: melodia
+data:
+  POSTGRES_DB: melodia_db
+  DATABASE_HOST: melodia-db
+  DATABASE_PORT: "5432"
+  DATABASE_USER: postgres
+  BACKEND_URL: http://melodia-backend:8000

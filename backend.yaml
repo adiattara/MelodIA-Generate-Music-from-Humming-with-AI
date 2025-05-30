@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: melodia-backend
+  namespace: melodia
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: melodia-backend
+  template:
+    metadata:
+      labels:
+        app: melodia-backend
+    spec:
+      containers:
+      - name: backend
+        image: melodia-backend:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DATABASE_URL
+          value: postgresql://$(DATABASE_USER):$(DATABASE_PASSWORD)@$(DATABASE_HOST):$(DATABASE_PORT)/$(POSTGRES_DB)
+        - name: DATABASE_USER
+          valueFrom:
+            configMapKeyRef:
+              name: melodia-config
+              key: DATABASE_USER
+        - name: DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: melodia-secrets
+              key: DATABASE_PASSWORD
+        - name: DATABASE_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: melodia-config
+              key: DATABASE_HOST
+        - name: DATABASE_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: melodia-config
+              key: DATABASE_PORT
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: melodia-config
+              key: POSTGRES_DB
+        volumeMounts:
+        - name: shared-data
+          mountPath: /app/data
+      volumes:
+      - name: shared-data
+        persistentVolumeClaim:
+          claimName: shared-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: melodia-backend
+  namespace: melodia
+spec:
+  selector:
+    app: melodia-backend
+  ports:
+  - port: 8000
+    targetPort: 8000
+  type: ClusterIP

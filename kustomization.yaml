@@ -1,0 +1,21 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: melodia
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - secret.yaml
+  - persistent-volumes.yaml
+  - postgres.yaml
+  - backend.yaml
+  - frontend.yaml
+
+images:
+  - name: melodia-backend
+    newName: ${REGISTRY}/melodia-backend
+    newTag: latest
+  - name: melodia-frontend
+    newName: ${REGISTRY}/melodia-frontend
+    newTag: latest

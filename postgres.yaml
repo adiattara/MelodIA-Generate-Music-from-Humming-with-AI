@@ -1,0 +1,75 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-script
+  namespace: melodia
+data:
+  init.sql: |
+    CREATE TABLE IF NOT EXISTS enrich_logs (
+        id SERIAL PRIMARY KEY,
+        filename TEXT NOT NULL,
+        unique_id TEXT NOT NULL,
+        processed_at TIMESTAMP NOT NULL DEFAULT NOW()
+    );
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: melodia-db
+  namespace: melodia
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: melodia-db
+  template:
+    metadata:
+      labels:
+        app: melodia-db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            configMapKeyRef:
+              name: melodia-config
+              key: DATABASE_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: melodia-secrets
+              key: DATABASE_PASSWORD
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: melodia-config
+              key: POSTGRES_DB
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        - name: init-script
+          mountPath: /docker-entrypoint-initdb.d
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: postgres-pvc
+      - name: init-script
+        configMap:
+          name: postgres-init-script
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: melodia-db
+  namespace: melodia
+spec:
+  selector:
+    app: melodia-db
+  ports:
+  - port: 5432
+    targetPort: 5432
+  type: ClusterIP

@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: melodia-frontend
+  namespace: melodia
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: melodia-frontend
+  template:
+    metadata:
+      labels:
+        app: melodia-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: melodia-frontend:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8501
+        env:
+        - name: BACKEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: melodia-config
+              key: BACKEND_URL
+        volumeMounts:
+        - name: shared-data
+          mountPath: /app/data
+      volumes:
+      - name: shared-data
+        persistentVolumeClaim:
+          claimName: shared-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: melodia-frontend
+  namespace: melodia
+spec:
+  selector:
+    app: melodia-frontend
+  ports:
+  - port: 8501
+    targetPort: 8501
+  type: LoadBalancer
