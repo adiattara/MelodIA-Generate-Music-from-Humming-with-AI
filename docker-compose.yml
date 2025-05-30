@@ -58,5 +58,4 @@ networks:
     driver: bridge
   back_db:
     driver: bridge
-    internal: true   # même isolation pour la base
 
