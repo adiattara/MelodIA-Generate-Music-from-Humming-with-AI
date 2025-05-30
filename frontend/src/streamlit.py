@@ -55,7 +55,7 @@ def audio_to_midi(audio_file):
     st.success("Conversion audio en MIDI terminée.")
     return OUTPUT_MIDI_FILE
 
-def improve_midi_with_ai(midi_file_path, ai_service_url="http://backend:8000/enrich_midi/"):
+def improve_midi_with_ai(midi_file_path, ai_service_url=os.environ.get("API_URL", "http://backend:8000/enrich_midi/")):
     st.info("Amélioration du MIDI avec l'IA via FastAPI en cours...")
     with open(midi_file_path, "rb") as f:
         files = {"file": (os.path.basename(midi_file_path), f, "audio/midi")}

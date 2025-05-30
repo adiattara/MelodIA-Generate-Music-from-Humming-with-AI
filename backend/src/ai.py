@@ -10,7 +10,7 @@ from midi_generator import load_model_from_huggingface, generate_continuation_mi
 
 app = FastAPI(title="MelodIA AI Service")
 
-DATABASE_URL="postgresql://postgres:password@db:5432/melodia_db"
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 database = databases.Database(DATABASE_URL)
 
@@ -39,7 +39,7 @@ async def enrich_midi(file: UploadFile = File(...)):
     with open(input_path, "wb") as f:
         f.write(content)
 
-    model_name = "skytnt/midi-model-tv2o-medium"
+    model_name = os.environ.get("MODEL_NAME", "skytnt/midi-model-tv2o-medium")
     device = "cuda" if False else "cpu"
 
     model, tokenizer = load_model_from_huggingface(model_name, device=device)
@@ -50,10 +50,10 @@ async def enrich_midi(file: UploadFile = File(...)):
             tokenizer=tokenizer,
             output_path=output_path,
             input_midi_path=input_path,
-            max_len=512,
-            temp=0.90,
-            top_p=0.98,
-            top_k=20
+            max_len=int(os.environ.get("MODEL_MAX_LEN", 512)),
+            temp=float(os.environ.get("MODEL_TEMP", 0.90)),
+            top_p=float(os.environ.get("MODEL_TOP_P", 0.98)),
+            top_k=int(os.environ.get("MODEL_TOP_K", 20))
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de la génération IA : {e}")

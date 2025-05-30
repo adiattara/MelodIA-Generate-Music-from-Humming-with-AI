@@ -13,7 +13,12 @@ services:
       - front_back
       - back_db
     environment:
-      - DATABASE_URL=postgresql://postgres:password@db:5432/melodia_db
+      - DATABASE_URL=${DATABASE_URL}
+      - MODEL_NAME=${MODEL_NAME}
+      - MODEL_MAX_LEN=${MODEL_MAX_LEN}
+      - MODEL_TEMP=${MODEL_TEMP}
+      - MODEL_TOP_P=${MODEL_TOP_P}
+      - MODEL_TOP_K=${MODEL_TOP_K}
     restart: unless-stopped
 
   frontend:
@@ -27,14 +32,16 @@ services:
       - backend
     networks:
       - front_back
+    environment:
+      - API_URL=${API_URL}
     restart: unless-stopped
 
   db:
     image: postgres:15
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: melodia_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
